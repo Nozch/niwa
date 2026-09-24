@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "01a02fa8-45e1-7c36-9626-06aa8a67360b",
+  "type": "comparisonTable",
+  "title": "手順書が求めている確認",
+  "summary": "リポジトリに置いたAIエージェント向けの手順書から、記録ごとの確認の要否を抜き出した。",
+  "caption": "承認がいちばん要るはずの記録だけ、確認するなと自分で書いていた。",
+  "sources": [],
+  "columns": [{ "key": "confirm", "label": "ユーザ確認", "align": "start" }],
+  "rows": [
+    { "key": "completion-criteria", "label": "Completion Criteria", "cells": { "confirm": "不要（書き終えたら確認を取らずに次へ進む）" } },
+    { "key": "devlog", "label": "DevLog", "cells": { "confirm": "必須" } },
+    { "key": "decision-map", "label": "Decision Map", "cells": { "confirm": "必須（無断で編集しない）" } }
+  ]
+}

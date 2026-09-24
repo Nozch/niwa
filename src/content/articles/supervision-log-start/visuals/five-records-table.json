@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "01a02fa8-45e0-7a81-93b4-12f715d06cd8",
+  "type": "comparisonTable",
+  "title": "5つの記録と、それぞれが答えること",
+  "summary": "一つの文書にまとめなかったのは、情報の変わるタイミングと、確定する人が違うから。",
+  "sources": [],
+  "columns": [{ "key": "answers", "label": "何が分かるか", "align": "start" }],
+  "rows": [
+    { "key": "decision-map", "label": "Decision Map", "cells": { "answers": "なぜこの方針なのか" } },
+    { "key": "roadmap", "label": "Roadmap", "cells": { "answers": "どの順序で進めるのか" } },
+    { "key": "completion-criteria", "label": "Completion Criteria", "cells": { "answers": "何を満たせば完成なのか" } },
+    { "key": "devlog", "label": "DevLog", "cells": { "answers": "何を行い、何を確認したのか" } },
+    { "key": "todo", "label": "Todo", "cells": { "answers": "何が残っているのか" } }
+  ]
+}

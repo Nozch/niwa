@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "01978f38-8e00-7000-8000-000000000101",
+  "type": "chart",
+  "title": "試作回数と理解度",
+  "summary": "試作を重ねるにつれて理解できた人の割合が42%から84%へ増加した。",
+  "caption": "各回の振り返りアンケートをもとにした架空のサンプルデータ。",
+  "sources": [],
+  "chartKind": "line",
+  "xAxis": {
+    "label": "試作",
+    "categories": ["1回目", "2回目", "3回目", "4回目"]
+  },
+  "yAxis": {
+    "label": "理解できた割合",
+    "unit": "%"
+  },
+  "series": [
+    {
+      "key": "understanding",
+      "label": "理解度",
+      "values": [42, 55, 71, 84]
+    }
+  ]
+}

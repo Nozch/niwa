@@ -1,0 +1,27 @@
+---
+import { kindOf, pickOf, type Branch } from '@/lib/record-shape';
+import RecordTree from './RecordTree.astro';
+
+interface Props { items: Branch[]; visualId: string }
+const { items, visualId } = Astro.props;
+---
+
+<ul class="record-tree">
+  {items.map(({ field, name, children }) => (
+    <li>
+      {field.purpose ? (
+        <label class:list={['record-node', { 'is-emphasis': field.emphasis }]} for={pickOf(visualId, field.path)}>
+          <span class="record-name">{name}</span>
+          <span class="record-kind">{kindOf(field)}</span>
+          {field.emphasis && <span class="record-star">主役</span>}
+        </label>
+      ) : (
+        <span class="record-node is-plain">
+          <span class="record-name">{name}</span>
+          <span class="record-kind">{kindOf(field)}</span>
+        </span>
+      )}
+      {children.length > 0 && <RecordTree items={children} visualId={visualId} />}
+    </li>
+  ))}
+</ul>

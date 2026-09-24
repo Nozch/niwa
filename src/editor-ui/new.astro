@@ -1,0 +1,40 @@
+---
+// dev 専用の新規作成ページ。integration が command==='dev' のときだけ /editor/new に注入する。
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import EditorForm from '@/components/EditorForm.svelte';
+import { buildNavigation, sortArticles, uniqueSorted } from '@/lib/articles';
+
+const all = await getCollection('articles');
+const navigation = buildNavigation(sortArticles(all));
+const articles = sortArticles(all).map((a) => ({ id: a.data.id, title: a.data.title, kind: a.data.kind }));
+const allTags = uniqueSorted(all.flatMap((a) => a.data.tags));
+const allCategories = uniqueSorted(all.flatMap((a) => a.data.categories));
+const allSeries = uniqueSorted(all.flatMap((a) => a.data.series));
+---
+
+<BaseLayout title="新規記事" navigation={navigation}>
+  <section class="editor-page">
+    <a class="back" href="/editor">← 一覧へ</a>
+    <header class="editor-head">
+      <h1>新規記事</h1>
+    </header>
+    <EditorForm
+      mode="create"
+      articles={articles}
+      allTags={allTags}
+      allCategories={allCategories}
+      allSeries={allSeries}
+      client:load
+    />
+  </section>
+</BaseLayout>
+
+<style>
+  .editor-page { max-width: 760px; margin: 0 auto; padding: 54px 48px 90px; }
+  .editor-head { margin-bottom: 1.5rem; }
+  .editor-head h1 { margin: 0.2rem 0; }
+  @media (max-width: 720px) {
+    .editor-page { padding: 38px 20px 70px; }
+  }
+</style>

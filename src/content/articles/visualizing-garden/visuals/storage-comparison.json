@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "01978f38-8e00-7000-8000-000000000102",
+  "type": "comparisonTable",
+  "title": "コンテンツ保存方式の比較",
+  "summary": "Git同居、MDX埋め込み、外部ストレージを、検証、編集、運用の三点で比較する。",
+  "caption": "MVPではbuild時検証と運用の単純さを優先する。",
+  "sources": [],
+  "columns": [
+    { "key": "validation", "label": "検証", "align": "center" },
+    { "key": "editing", "label": "編集", "align": "center" },
+    { "key": "operation", "label": "運用", "align": "center" }
+  ],
+  "rows": [
+    {
+      "key": "git",
+      "label": "Git同居",
+      "cells": { "validation": "強い", "editing": "容易", "operation": "単純" }
+    },
+    {
+      "key": "embedded",
+      "label": "MDX埋め込み",
+      "cells": { "validation": "弱い", "editing": "混在", "operation": "単純" }
+    },
+    {
+      "key": "external",
+      "label": "外部ストレージ",
+      "cells": { "validation": "要実装", "editing": "分散", "operation": "複雑" }
+    }
+  ]
+}

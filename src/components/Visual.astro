@@ -1,0 +1,15 @@
+---
+import { getEntry } from 'astro:content';
+import Chart from './Chart.svelte';
+import ComparisonTable from './ComparisonTable.astro';
+import RecordShape from './RecordShape.astro';
+
+interface Props { id: string }
+const { id } = Astro.props;
+const entry = await getEntry('visuals', id);
+if (!entry) throw new Error(`Visual ${id} が見つかりません`);
+---
+
+{entry.data.type === 'chart' && <Chart visual={entry.data} client:visible />}
+{entry.data.type === 'comparisonTable' && <ComparisonTable visual={entry.data} />}
+{entry.data.type === 'recordShape' && <RecordShape visual={entry.data} />}

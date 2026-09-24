@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "01a02fa8-45e1-77b9-8b85-0bc73f3753fb",
+  "type": "comparisonTable",
+  "title": "手で書いたTodoと、AIが書いたTodo",
+  "summary": "DevLogから引き継いだものを除く25件を、本文の長さで分けた。長いほうがAIの分析で、短いほうが自分の思いつきになる。",
+  "caption": "片付いているのは、自分が思いつきで書いたほうだった。",
+  "sources": [],
+  "columns": [
+    { "key": "count", "label": "件数", "align": "end" },
+    { "key": "closed", "label": "片付いたもの", "align": "end" }
+  ],
+  "rows": [
+    { "key": "short", "label": "短いもの（60字以下）", "cells": { "count": 10, "closed": 7 } },
+    { "key": "long", "label": "長いもの（60字超）", "cells": { "count": 15, "closed": 2 } }
+  ]
+}

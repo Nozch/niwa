@@ -1,0 +1,113 @@
+---
+// dev 専用の記事一覧。integration が command==='dev' のときだけ /editor に注入する。
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { articleDir, articleSlug, buildNavigation, formatDate, kindLabel, sortArticles } from '@/lib/articles';
+
+// エディタは下書きを含む全記事が対象。サイドバーの集計もその全記事から作る。
+const allArticles = await getCollection('articles');
+const articles = sortArticles(allArticles);
+const navigation = buildNavigation(articles);
+---
+
+<BaseLayout title="記事エディタ" navigation={navigation}>
+  <section class="editor-list">
+    <header class="editor-head">
+      <h1>記事エディタ</h1>
+      <a class="new-link" href="/editor/new" data-new-link>＋ 新規作成</a>
+    </header>
+    <a class="back" href="/">← 庭に戻る</a>
+
+    <ul class="rows">
+      {articles.map((article) => {
+        const dir = articleDir(article);
+        return (
+          <li class="row" data-editor-row data-kind={article.data.kind} data-tags={JSON.stringify(article.data.tags)}>
+            <a class="row-main" href={`/editor/${dir}/edit`}>
+              <span class="row-title">{article.data.title}</span>
+              <span class="row-meta">
+                <span>{kindLabel(article)}</span>
+                <time>{formatDate(article.data.publishedAt ?? article.data.createdAt)}</time>
+                {article.data.draft && <span class="draft">下書き</span>}
+              </span>
+            </a>
+            <a class="row-view" href={`/articles/${articleSlug(article)}/`} target="_blank" rel="noreferrer">表示 ↗</a>
+          </li>
+        );
+      })}
+    </ul>
+    <p class="empty" data-empty hidden>この絞り込みに合う記事はありません。</p>
+  </section>
+</BaseLayout>
+
+<style>
+  .editor-list { max-width: 760px; margin: 0 auto; padding: 54px 48px 90px; }
+  .editor-head { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .editor-head h1 { margin: 0; }
+  .new-link { margin-inline-start: auto; }
+  .back { display: inline-flex; margin-bottom: 28px; color: var(--ink-soft); font-size: var(--text-sm); text-decoration: none; }
+  .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .row[hidden] { display: none; }
+  .row { display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--faint); }
+  .row-main { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; padding: 0.7rem 0.3rem; text-decoration: none; color: inherit; }
+  .row-main:hover .row-title { text-decoration: underline; }
+  .row-title { font-family: 'Klee One', cursive; font-weight: 400; font-size: var(--text-lg); letter-spacing: .03em; color: var(--ink); }
+  .row-meta { display: flex; gap: 0.6rem; font-size: 0.8rem; color: var(--ink-soft); }
+  .row-meta .draft { color: var(--accent); }
+  .row-view { font-size: 0.8rem; white-space: nowrap; }
+  .empty { margin-top: 1.5rem; color: var(--faint); font-size: var(--text-sm); }
+  @media (max-width: 720px) {
+    .editor-list { padding: 38px 20px 70px; }
+  }
+</style>
+
+<script>
+  // サイドバー（種類・タグ）で、この一覧をその場で絞り込む。ホームの挙動をエディタ一覧に対して再現する。
+  const rows = [...document.querySelectorAll<HTMLElement>('[data-editor-row]')];
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+  const newLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-new-link], [data-sidebar-new-link]')];
+  let kind = 'all';
+  const tags = new Set<string>();
+
+  const apply = () => {
+    let visible = 0;
+    rows.forEach((row) => {
+      const rowTags = JSON.parse(row.dataset.tags ?? '[]') as string[];
+      const show = (kind === 'all' || row.dataset.kind === kind) && [...tags].every((tag) => rowTags.includes(tag));
+      row.hidden = !show;
+      if (show) visible += 1;
+    });
+    if (empty) empty.hidden = visible !== 0;
+    // 絞り込み状態を「新規作成」系リンク（in-page と サイドバー）に引き継ぐ。
+    const params = new URLSearchParams();
+    if (kind !== 'all') params.set('kind', kind);
+    tags.forEach((tag) => params.append('tag', tag));
+    const query = params.toString();
+    newLinks.forEach((link) => (link.href = query ? `/editor/new?${query}` : '/editor/new'));
+    document.querySelectorAll<HTMLElement>('[data-sidebar-kind]').forEach((item) => {
+      item.setAttribute('aria-current', item.dataset.sidebarKind === kind ? 'page' : 'false');
+    });
+    document.querySelectorAll<HTMLElement>('[data-sidebar-tag]').forEach((item) => {
+      item.dataset.active = String(tags.has(item.dataset.sidebarTag ?? ''));
+    });
+  };
+
+  document.querySelectorAll<HTMLAnchorElement>('[data-sidebar-kind]').forEach((item) =>
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      kind = item.dataset.sidebarKind ?? 'all';
+      apply();
+    }),
+  );
+  document.querySelectorAll<HTMLAnchorElement>('[data-sidebar-tag]').forEach((item) =>
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      const tag = item.dataset.sidebarTag;
+      if (!tag) return;
+      tags.has(tag) ? tags.delete(tag) : tags.add(tag);
+      apply();
+    }),
+  );
+
+  apply();
+</script>

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "id": "01a02d51-0299-743e-bc99-f695b336f6ee",
+  "type": "recordShape",
+  "title": "判断ひとつ分の形",
+  "summary": "Decision Mapのノードが持つ項目。一つの判断と、それを記録する理由を、決まった形で要求する。",
+  "caption": "AIは下書きを作れるが、この記録に入れてよいかを決めるのは人間に残してある。",
+  "sources": [],
+  "record": "DecisionNode",
+  "fields": [
+    { "path": "schemaVersion", "valueType": "number" },
+    {
+      "path": "id",
+      "valueType": "string",
+      "purpose": "この判断を指す名前。完成条件やRoadmapは、文章を写さずにこのIDだけを指す",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    { "path": "title", "valueType": "string" },
+    {
+      "path": "type",
+      "valueType": "string",
+      "purpose": "判断の種類。覆すとやり直しになる原則か、領域をまとめる索引か、実装の境界か",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "priority",
+      "valueType": "enum",
+      "choices": ["high", "medium", "low"],
+      "purpose": "記録する優先度。重要さではなく、曖昧になったり消えたりしたときの困り方で決める",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "status",
+      "valueType": "enum",
+      "choices": ["draft", "active", "resolved"],
+      "purpose": "判断が効いているかどうか。保留のままAIに読ませないよう、採用前はdraftに留める",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    { "path": "summary", "valueType": "string", "purpose": "何を決めたか", "draftedBy": "ai", "confirmedBy": "human" },
+    {
+      "path": "reasonToRecord",
+      "valueType": "string",
+      "emphasis": true,
+      "purpose": "記録しないと何が曖昧になるかを書く欄。ここが埋まらない判断は、そもそも残す必要が無い",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "parentId",
+      "valueType": "string",
+      "purpose": "どの判断領域に属するか。かつては「どの判断の後に生まれたか」を指しており、増えるほど読めなくなった",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "relatedIds",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "親子では表せない結びつき。前提にしている判断や、対になっている判断を指す",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "content",
+      "valueType": "object",
+      "purpose": "決めた中身そのもの。ここだけは判断ごとに形が違ってよい",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    { "path": "createdAt", "valueType": "datetime", "draftedBy": "machine", "confirmedBy": "machine" },
+    { "path": "updatedAt", "valueType": "datetime", "draftedBy": "machine", "confirmedBy": "machine" }
+  ]
+}

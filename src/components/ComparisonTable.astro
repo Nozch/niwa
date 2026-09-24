@@ -1,0 +1,33 @@
+---
+import type { ComparisonTableVisual } from '@/content/schema';
+
+interface Props { visual: ComparisonTableVisual }
+const { visual } = Astro.props;
+---
+
+<section class="visual-block" aria-labelledby={`visual-${visual.id}`}>
+  <h2 class="visual-heading" id={`visual-${visual.id}`}>{visual.title}</h2>
+  <p class="visual-summary">{visual.summary}</p>
+  <div class="comparison-scroll">
+    <table class="comparison">
+      <thead>
+        <tr>
+          <th scope="col">項目</th>
+          {visual.columns.map((column) => <th scope="col" style={`text-align:${column.align}`}>{column.label}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {visual.rows.map((row) => (
+          <tr>
+            <th scope="row">{row.label}</th>
+            {visual.columns.map((column) => <td style={`text-align:${column.align}`}>{String(row.cells[column.key] ?? '—')}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  {visual.caption && <p class="visual-caption">{visual.caption}</p>}
+  {visual.sources.length > 0 && (
+    <p class="visual-sources">出典：{visual.sources.map((source, index) => <><a href={source.url}>{source.label}</a>{index < visual.sources.length - 1 ? '、' : ''}</>)}</p>
+  )}
+</section>

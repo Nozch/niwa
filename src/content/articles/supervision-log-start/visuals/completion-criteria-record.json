@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "01a005f8-b1f2-709a-8a92-7d7a7fbbfe80",
+  "type": "recordShape",
+  "title": "完成条件の形",
+  "summary": "何を満たせば完成なのかを、実装の前に置く記録。実際のスキーマにある項目はこれで全部である。",
+  "caption": "人間が確定する欄が一つも無い。承認を求めているつもりだったが、形の側がそれを要求していなかった。",
+  "sources": [],
+  "record": "CompletionCriteria",
+  "fields": [
+    { "path": "schemaName", "valueType": "string" },
+    { "path": "schemaVersion", "valueType": "number" },
+    {
+      "path": "version",
+      "valueType": "string",
+      "purpose": "完成条件・Roadmapのフェーズ・DevLogを繋ぐキー。着手の順序ではなく、ただの識別子",
+      "draftedBy": "ai",
+      "confirmedBy": "ai"
+    },
+    {
+      "path": "goal",
+      "valueType": "string",
+      "purpose": "このバージョンで到達する状態。条件はこれを判定できる形に割ったもの",
+      "draftedBy": "ai",
+      "confirmedBy": "ai"
+    },
+    {
+      "path": "completionCriteria",
+      "valueType": "object",
+      "repeated": true,
+      "purpose": "満たせば完成と判定できる条件",
+      "draftedBy": "ai",
+      "confirmedBy": "ai"
+    },
+    { "path": "completionCriteria.id", "valueType": "string" },
+    {
+      "path": "completionCriteria.description",
+      "valueType": "string",
+      "purpose": "判定できる一つの条件。読んで判定できなければ条件になっていない"
+    },
+    {
+      "path": "completionCriteria.required",
+      "valueType": "boolean",
+      "purpose": "完成に必須か、満たせば望ましい任意目標か"
+    },
+    {
+      "path": "nonGoals",
+      "valueType": "object",
+      "repeated": true,
+      "emphasis": true,
+      "purpose": "今回やらないこと。スキーマが「スコープ逸脱を防ぐ主装置」と呼んでいる欄で、方向がぶれるのを止めるならここが効くはずだった",
+      "draftedBy": "ai",
+      "confirmedBy": "ai"
+    },
+    { "path": "nonGoals.id", "valueType": "string" },
+    { "path": "nonGoals.description", "valueType": "string", "purpose": "やらないと決めたことと、その理由" }
+  ]
+}

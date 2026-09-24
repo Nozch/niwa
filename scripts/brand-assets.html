@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>庭 Niwa — ブランド画像の生成</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+    <style>
+      body { margin: 0; padding: 32px; background: #efece6; color: #47443c; font-family: 'Zen Kaku Gothic New', sans-serif; }
+      h1 { font-family: 'Klee One', cursive; font-size: 22px; margin: 0 0 4px; }
+      p { margin: 0 0 24px; color: #8b887e; font-size: 13px; line-height: 1.8; }
+      .row { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+      figure { margin: 0; display: grid; gap: 8px; justify-items: start; }
+      figcaption { font-size: 11px; color: #aaa79d; letter-spacing: .1em; }
+      canvas { background: #fff; box-shadow: 0 1px 2px rgba(70,66,47,.06), 0 8px 18px -12px rgba(70,66,47,.4); }
+      a.dl { font-size: 12px; color: #57c398; }
+    </style>
+  </head>
+  <body>
+    <h1>ブランド画像の生成</h1>
+    <p>
+      OGP画像とfaviconの生成元。色と書体はサイト本体（<code>src/styles/global.css</code> の stationery テーマ）から
+      写した値で、絵柄を変えるときは下の <code>PALETTE</code> と <code>drawOg</code> / <code>drawIcon</code> を直す。<br />
+      この環境にはSVG→PNGの変換ツールが無く、ブランドの書体 Klee One もOSに入っていないため、
+      Webフォントを読めるブラウザのcanvasで描くのが、サイトと同じ字形を出せる唯一の経路になっている。
+    </p>
+    <p>
+      <strong>作り直す手順</strong>: このファイルをブラウザで開き、下の5つのリンクからPNGを保存する。
+      <code>og.png</code> / <code>apple-touch-icon.png</code> / <code>icon-192.png</code> は <code>public/</code> へ、
+      <code>icon-16.png</code> / <code>icon-32.png</code> は <code>scripts/icon-sources/</code> へ置き、
+      最後に <code>node scripts/make-favicon-ico.mjs</code> で <code>public/favicon.ico</code> を作り直す。<br />
+      16pxと32pxは favicon.ico の中身になるだけで単体では配信しないので、公開ディレクトリには置かない。<br />
+      寸法を変えたときは <code>src/layouts/BaseLayout.astro</code> の <code>OG_IMAGE</code> の width / height も合わせる
+      （ここがずれると共有カードの形が崩れる）。
+    </p>
+    <div class="row" id="previews"></div>
+
+    <script type="module">
+      // サイト本体（global.css の :root と [data-theme='stationery']）から写した値。
+      // ここを変えたら画像を作り直す。サイト側との一致がブランドの一貫性そのもの。
+      const PALETTE = {
+        paper: '#f6f3ee',   // --paper 紙の地色
+        line: '#e8e4dc',    // --line 罫線
+        ink: '#47443c',     // --ink 本文の墨色。ロゴの字はこれ
+        dotHi: '#7ad3ab',   // status-dot の明部
+        dotMid: '#57c398',  // --accent-ink
+        dotLo: '#49b98c',   // status-dot の暗部
+      };
+
+      const GLYPH = '庭';
+      const FONT = '"Klee One", cursive';
+
+      // タブのアイコンは字の判別が最優先なので、地を墨色に沈めて字を紙色で抜く。
+      // 紙色の地に淡い字（サイドバーのエンボス表現）は16pxだと字が消える。
+      // letterpress は1pxのハイライトと1pxの影の対で凹凸を作るが、16pxでは両者が同じ画素に
+      // 乗って打ち消し合うため、効果として成立しない。
+      const ICON_COLORS = { bg: PALETTE.ink, ink: PALETTE.paper };
+
+      const OG_GLYPH_INK_HEIGHT = 300; // 字の「形」の高さ。フォントサイズではない
+      const ICON_GLYPH_FILL = 0.74; // アイコンの一辺に対して字の形が占める比率
+
+      /**
+       * 字の外接矩形（実際にインクが乗る範囲）を測る。
+       *
+       * canvas の textBaseline='middle' が合わせるのは、字の形の中心ではなくフォントが宣言する
+       * emボックスの中心。Klee One は手書き系で欧文用に上下の余白を広く取っているため両者がずれ、
+       * 素直に middle で置くと字が下がって見える。定数で補正すると字やフォントを変えたときに
+       * また合わなくなるので、毎回実測して中心を出す。
+       */
+      function measureGlyph(ctx, fontSize) {
+        ctx.font = `600 ${fontSize}px ${FONT}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        const m = ctx.measureText(GLYPH);
+        return {
+          width: m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+          height: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+          left: m.actualBoundingBoxLeft,
+          ascent: m.actualBoundingBoxAscent,
+        };
+      }
+
+      /** 字の形が指定の高さになるフォントサイズを求める。基準サイズで測って比例させる。 */
+      function fontSizeForInkHeight(ctx, inkHeight) {
+        const REFERENCE = 200;
+        return (REFERENCE * inkHeight) / measureGlyph(ctx, REFERENCE).height;
+      }
+
+      /** 字の形の中心が (cx, cy) に来るように描く。 */
+      function drawGlyphCentered(ctx, fontSize, cx, cy, color) {
+        const ink = measureGlyph(ctx, fontSize);
+        ctx.fillStyle = color;
+        ctx.fillText(GLYPH, cx - ink.width / 2 + ink.left, cy - ink.height / 2 + ink.ascent);
+        return ink;
+      }
+
+      /**
+       * ミントの点。サイトの .status-dot（記事カードの公開状態を示す玉）と同じ見え方を狙う。
+       * CSSの inset box-shadow は canvas に無いので、暗いリム→本体のグラデーション→上部のハイライト
+       * の3枚重ねで近似している。
+       */
+      function drawDot(ctx, cx, cy, r) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        const body = ctx.createRadialGradient(cx, cy - r * 0.32, r * 0.1, cx, cy, r * 1.3);
+        body.addColorStop(0, PALETTE.dotHi);
+        body.addColorStop(0.62, PALETTE.dotMid);
+        body.addColorStop(1, PALETTE.dotLo);
+        ctx.fillStyle = body;
+        ctx.fill();
+
+        // 下側の内側に落ちる影（玉の丸みを出す）
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        const rim = ctx.createRadialGradient(cx, cy, r * 0.72, cx, cy, r);
+        rim.addColorStop(0, 'rgba(10,52,38,0)');
+        rim.addColorStop(1, 'rgba(10,52,38,0.26)');
+        ctx.fillStyle = rim;
+        ctx.fill();
+
+        // 上部のハイライト
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - r * 0.42, r * 0.46, r * 0.3, 0, 0, Math.PI * 2);
+        const gloss = ctx.createLinearGradient(cx, cy - r * 0.8, cx, cy);
+        gloss.addColorStop(0, 'rgba(255,255,255,0.62)');
+        gloss.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gloss;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      /**
+       * OGP画像 1200×630。構図は「庭の1字だけ大きく、ミントの点を1つ添える」。
+       * タイムライン上ではカードが幅200px程度まで縮むので、文字情報を足さず1字の可読性に振っている。
+       */
+      function drawOg(ctx, w, h) {
+        ctx.fillStyle = PALETTE.paper;
+        ctx.fillRect(0, 0, w, h);
+
+        // 便箋の点線枠。サイドバーの border-right: 1px dotted と同じ性格の線。
+        ctx.save();
+        ctx.strokeStyle = PALETTE.line;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([2, 7]);
+        ctx.lineCap = 'round';
+        roundRect(ctx, 44, 44, w - 88, h - 88, 10);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        const fontSize = fontSizeForInkHeight(ctx, OG_GLYPH_INK_HEIGHT);
+        const ink = drawGlyphCentered(ctx, fontSize, w / 2, h / 2, PALETTE.ink);
+        ctx.restore();
+
+        // 点は字の頭からの距離で置く。字の大きさを変えても間隔が保たれる。
+        drawDot(ctx, w / 2, h / 2 - ink.height / 2 - 34, 17);
+      }
+
+      /**
+       * アイコン。16pxまで縮むので、枠と余白を削って字を可能な限り大きく取る。
+       * 明るいタブでも暗いタブでも塊として立つよう、地は必ずべた塗りする。
+       */
+      function drawIcon(ctx, size) {
+        ctx.fillStyle = ICON_COLORS.bg;
+        roundRect(ctx, 0, 0, size, size, size * 0.22);
+        ctx.fill();
+
+        ctx.save();
+        // 字の「形」が一辺の一定比率になるよう合わせる。フォントサイズを比率で決めると、
+        // 字の上下に入るフォント側の余白まで数えてしまい、サイズごとに見た目の大きさがずれる。
+        const fontSize = fontSizeForInkHeight(ctx, size * ICON_GLYPH_FILL);
+        drawGlyphCentered(ctx, fontSize, size / 2, size / 2, ICON_COLORS.ink);
+        ctx.restore();
+      }
+
+      function render(name, w, h, draw) {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        draw(ctx, w, h);
+        return { name, canvas };
+      }
+
+      const SPECS = [
+        { name: 'og.png', w: 1200, h: 630, draw: (ctx, w, h) => drawOg(ctx, w, h) },
+        { name: 'apple-touch-icon.png', w: 180, h: 180, draw: (ctx, w) => drawIcon(ctx, w) },
+        { name: 'icon-192.png', w: 192, h: 192, draw: (ctx, w) => drawIcon(ctx, w) },
+        { name: 'icon-32.png', w: 32, h: 32, draw: (ctx, w) => drawIcon(ctx, w) },
+        { name: 'icon-16.png', w: 16, h: 16, draw: (ctx, w) => drawIcon(ctx, w) },
+      ];
+
+      async function build() {
+        // 字形がWebフォントで確定してから描く。読み込み前に描くと代替フォントで焼き付いてしまう。
+        // Google Fonts は文字種ごとにファイルを分けて配信するので、load() には必ず実際に描く字を渡す。
+        // 省略すると欧文のサブセットだけが読まれ、漢字は代替フォントのまま描かれてしまう。
+        await document.fonts.load('600 200px "Klee One"', GLYPH);
+        await document.fonts.ready;
+
+        const previews = document.getElementById('previews');
+        const out = {};
+        for (const spec of SPECS) {
+          const { canvas } = render(spec.name, spec.w, spec.h, spec.draw);
+          out[spec.name] = canvas.toDataURL('image/png');
+
+          const figure = document.createElement('figure');
+          const shown = document.createElement('canvas');
+          const scale = Math.min(1, 420 / spec.w);
+          shown.width = spec.w * scale;
+          shown.height = spec.h * scale;
+          shown.getContext('2d').drawImage(canvas, 0, 0, shown.width, shown.height);
+          const link = document.createElement('a');
+          link.className = 'dl';
+          link.href = out[spec.name];
+          link.download = spec.name;
+          link.textContent = `${spec.name} をダウンロード`;
+          const caption = document.createElement('figcaption');
+          caption.textContent = `${spec.w}×${spec.h}`;
+          figure.append(shown, caption, link);
+          previews.append(figure);
+        }
+        // 書き出し側（scripts/write-brand-assets.mjs）はここを読んでPNGを public/ へ保存する。
+        window.__brandAssets = out;
+        document.title = 'READY — ' + document.title;
+      }
+
+      build();
+    </script>
+  </body>
+</html>

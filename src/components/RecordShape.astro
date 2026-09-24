@@ -1,0 +1,74 @@
+---
+import type { RecordShapeVisual } from '@/content/schema';
+import { ACTORS, buildBranches, kindOf, pickDefaultField, pickOf } from '@/lib/record-shape';
+import RecordTree from './RecordTree.astro';
+
+interface Props { visual: RecordShapeVisual }
+const { visual } = Astro.props;
+
+const branches = buildBranches(visual.fields);
+const described = visual.fields.filter((field) => field.purpose);
+/* 空の窓から始めない。主役があればそれを、無ければ最初の項目を開いておく */
+const defaultField = pickDefaultField(visual.fields);
+---
+
+<section class="visual-block record-shape" aria-labelledby={`visual-${visual.id}`}>
+  <h2 class="visual-heading" id={`visual-${visual.id}`}>{visual.title}</h2>
+  <p class="visual-summary">{visual.summary}</p>
+
+  <div class="record-panes">
+    <div class="record-structure">
+      <p class="record-pane-label">{visual.record} の構造</p>
+      <RecordTree items={branches} visualId={visual.id} />
+    </div>
+
+    <div class="record-window">
+      <p class="record-pane-label">項目の意味</p>
+      {/* 各ラジオは自分のカードの直前に置く。隣接だけで対応が取れるので、
+          項目ごとのCSSを作らずに済み、URLもスクロール位置も動かない */}
+      <div class="record-glass" role="group" aria-label={`${visual.record} の項目の意味`}>
+        {described.map((field, index) => (
+          <>
+            <input
+              class="record-pick"
+              type="radio"
+              name={`record-${visual.id}`}
+              id={pickOf(visual.id, field.path)}
+              checked={field.path === defaultField?.path}
+            />
+            <div class:list={['record-card', { 'is-emphasis': field.emphasis }]}>
+              <p class="record-card-head">
+                <code>{field.path}</code>
+                <span class="record-kind">{kindOf(field)}</span>
+              </p>
+              <p class="record-purpose">{field.purpose}</p>
+              {field.choices && <p class="record-choices">選択肢：{field.choices.join(' / ')}</p>}
+              {(field.draftedBy || field.confirmedBy) && (
+                <p class="record-actors">
+                  {field.draftedBy && <span class="record-actor">用意 {ACTORS[field.draftedBy]}</span>}
+                  {field.confirmedBy && <span class="record-actor is-confirm">確定 {ACTORS[field.confirmedBy]}</span>}
+                </p>
+              )}
+              {/* 表示中のカードの中からしか押せないので、隣を指すだけで順送りになる。
+                  同じことは矢印キーでもできるため、支援技術からはラジオ側だけを見せる */}
+              <p class="record-flip" aria-hidden="true">
+                {index > 0
+                  ? <label class="record-flip-go is-prev" for={pickOf(visual.id, described[index - 1].path)} />
+                  : <span class="record-flip-go is-prev is-off" />}
+                <span class="record-flip-count">{index + 1} / {described.length}</span>
+                {index < described.length - 1
+                  ? <label class="record-flip-go is-next" for={pickOf(visual.id, described[index + 1].path)} />
+                  : <span class="record-flip-go is-next is-off" />}
+              </p>
+            </div>
+          </>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {visual.caption && <p class="visual-caption">{visual.caption}</p>}
+  {visual.sources.length > 0 && (
+    <p class="visual-sources">出典：{visual.sources.map((source, index) => <><a href={source.url}>{source.label}</a>{index < visual.sources.length - 1 ? '、' : ''}</>)}</p>
+  )}
+</section>

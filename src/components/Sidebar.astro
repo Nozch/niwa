@@ -1,0 +1,69 @@
+---
+interface Props {
+  navigation?: {
+    all: number;
+    diary: number;
+    project: number;
+    tags: { name: string; count: number }[];
+  };
+}
+const { navigation = { all: 0, diary: 0, project: 0, tags: [] } } = Astro.props;
+---
+
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="庭 ホーム">
+    <span class="brand-ja">庭</span>
+    <span class="brand-en">Niwa</span>
+  </a>
+  <button class="search-trigger" type="button" data-open-search>
+    <span class="search-icon" aria-hidden="true"></span>
+    <span class="search-label">探す</span>
+    <kbd>⌘K</kbd>
+  </button>
+  <nav class="side-nav" aria-label="記事の種類">
+    <a href="/" data-sidebar-kind="all" aria-current="page">
+      <span class="nav-punch" aria-hidden="true"><i></i><i></i></span>
+      <span>ストリーム</span><small>{navigation.all}</small>
+    </a>
+    <a href="/?kind=diary" data-sidebar-kind="diary">
+      <span class="nav-punch" aria-hidden="true"><i></i><i></i></span>
+      <span>日記</span><small>{navigation.diary}</small>
+    </a>
+    <a href="/?kind=project" data-sidebar-kind="project">
+      <span class="nav-punch" aria-hidden="true"><i></i><i></i></span>
+      <span>作りかけ</span><small>{navigation.project}</small>
+    </a>
+  </nav>
+  <section class="sidebar-tags" aria-labelledby="sidebar-tags-title">
+    <h2 id="sidebar-tags-title">タグ</h2>
+    <div>
+      {navigation.tags.map((tag) => (
+        <a href={`/?tag=${encodeURIComponent(tag.name)}`} data-sidebar-tag={tag.name} data-active="false">
+          <span class="tag-bead" aria-hidden="true"></span>
+          <span>{tag.name}</span><small>{tag.count}</small>
+        </a>
+      ))}
+    </div>
+  </section>
+  {import.meta.env.DEV && (
+    <nav class="side-nav editor-nav" aria-label="編集（開発のみ）">
+      <a href="/editor/new" data-sidebar-new-link><span>＋ 新規記事</span></a>
+      <a href="/editor"><span>記事エディタ</span></a>
+    </nav>
+  )}
+  <div class="visibility-key">
+    <span><i class="visibility-draft"></i>下書き（開発のみ）</span>
+    <span><i class="visibility-public"></i>公開</span>
+  </div>
+</aside>
+
+<style>
+  .editor-nav { padding-top: 18px; border-top: 1px dashed var(--line); }
+  .editor-nav a { color: var(--ink-soft); font-size: var(--text-sm); }
+</style>
+
+<script>
+  document.querySelector('[data-open-search]')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('niwa:search'));
+  });
+</script>

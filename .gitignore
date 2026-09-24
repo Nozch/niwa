@@ -1,0 +1,11 @@
+node_modules/
+.astro/
+dist/
+.pnpm-store/
+.claude/settings.local.json
+.DS_Store
+*.log
+
+# デザイン原型（プロトタイプの書き出し）。ローカル参照用に残す。
+庭 Niwa.dc.html
+support.js

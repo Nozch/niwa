@@ -1,0 +1,126 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { articleHref, buildNavigation, formatDate, kindLabel, visibleArticles } from '@/lib/articles';
+
+const allArticles = await getCollection('articles');
+const articles = visibleArticles(allArticles, import.meta.env.DEV);
+const navigation = buildNavigation(articles);
+const today = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
+---
+
+<BaseLayout navigation={navigation}>
+  <section class="stream" data-stream>
+    <header class="stream-header">
+      <div><p class="eyebrow" data-stream-label>ストリーム</p><h1>こんにちは</h1></div>
+      <div class="garden-count">{today}<br />育てているもの {articles.length} 件</div>
+    </header>
+
+    <div class="active-filters" data-active-filters hidden>
+      <span>絞り込み</span>
+      <div data-active-chips></div>
+    </div>
+
+    <div class="article-list">
+      {articles.map((article) => (
+        <article class="article-card" data-card data-kind={article.data.kind} data-tags={JSON.stringify(article.data.tags)}>
+          <a href={articleHref(article)} aria-label={`${article.data.title}を読む`}></a>
+          <div class="card-meta">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>{kindLabel(article)}</span>
+            <time datetime={article.data.publishedAt ?? article.data.createdAt}>{formatDate(article.data.publishedAt ?? article.data.createdAt)}</time>
+            {article.data.draft && <span class="visibility">下書き</span>}
+          </div>
+          <h2>{article.data.title}</h2>
+          <p>{article.data.description}</p>
+          <div class="card-foot">
+            {article.data.kind === 'project' && (
+              <div class="progress" aria-label={`進捗 ${article.data.progress}%`}>
+                <span class="progress-track"><span style={`width:${article.data.progress}%`}></span></span>
+                <span class="progress-value">{article.data.progress}%</span>
+              </div>
+            )}
+            <div class="tags">{article.data.tags.map((tag) => <span>＃{tag}</span>)}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+    <p class="empty" data-empty>この組み合わせには、まだ何も育っていません。</p>
+  </section>
+</BaseLayout>
+
+<script>
+  const stream = document.querySelector<HTMLElement>('[data-stream]');
+  if (stream) {
+    const params = new URLSearchParams(location.search);
+    let kind = params.get('kind') ?? 'all';
+    const tags = new Set<string>(params.getAll('tag'));
+    const cards = [...stream.querySelectorAll<HTMLElement>('[data-card]')];
+    const empty = stream.querySelector<HTMLElement>('[data-empty]');
+    const label = stream.querySelector<HTMLElement>('[data-stream-label]');
+    const activeFilters = stream.querySelector<HTMLElement>('[data-active-filters]');
+    const activeChips = stream.querySelector<HTMLElement>('[data-active-chips]');
+    const sidebarNewLink = document.querySelector<HTMLAnchorElement>('[data-sidebar-new-link]');
+    const navLabels: Record<string, string> = { all: 'ストリーム', diary: '日記', project: '作りかけ' };
+    const syncUrl = () => {
+      const next = new URL(location.href);
+      next.search = '';
+      if (kind !== 'all') next.searchParams.set('kind', kind);
+      tags.forEach((tag) => next.searchParams.append('tag', tag));
+      history.replaceState(null, '', `${next.pathname}${next.search}`);
+    };
+    const renderChips = () => {
+      if (!activeFilters || !activeChips) return;
+      activeChips.replaceChildren();
+      tags.forEach((tag) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'active-filter-chip';
+        chip.textContent = `＃${tag}  ×`;
+        chip.addEventListener('click', () => { tags.delete(tag); apply(); });
+        activeChips.append(chip);
+      });
+      activeFilters.hidden = tags.size === 0;
+    };
+    const apply = () => {
+      let visible = 0;
+      cards.forEach((card) => {
+        const cardTags = JSON.parse(card.dataset.tags ?? '[]') as string[];
+        const show = (kind === 'all' || card.dataset.kind === kind) && [...tags].every((tag) => cardTags.includes(tag));
+        card.hidden = !show;
+        if (show) visible += 1;
+      });
+      if (empty) empty.style.display = visible ? 'none' : 'block';
+      if (label) label.textContent = navLabels[kind] ?? navLabels.all;
+      document.querySelectorAll<HTMLElement>('[data-sidebar-kind]').forEach((item) => {
+        item.setAttribute('aria-current', item.dataset.sidebarKind === kind ? 'page' : 'false');
+      });
+      document.querySelectorAll<HTMLElement>('[data-sidebar-tag]').forEach((item) => {
+        item.dataset.active = String(tags.has(item.dataset.sidebarTag ?? ''));
+      });
+      // dev専用サイドバー「＋新規記事」に現在の絞り込みを引き継ぐ（本番ではリンク自体が無い）。
+      if (sidebarNewLink) {
+        const params = new URLSearchParams();
+        if (kind !== 'all') params.set('kind', kind);
+        tags.forEach((tag) => params.append('tag', tag));
+        const query = params.toString();
+        sidebarNewLink.href = query ? `/editor/new?${query}` : '/editor/new';
+      }
+      renderChips();
+      syncUrl();
+    };
+    document.querySelectorAll<HTMLAnchorElement>('[data-sidebar-kind]').forEach((item) => item.addEventListener('click', (event) => {
+      event.preventDefault();
+      kind = item.dataset.sidebarKind ?? 'all';
+      apply();
+    }));
+    document.querySelectorAll<HTMLAnchorElement>('[data-sidebar-tag]').forEach((item) => item.addEventListener('click', (event) => {
+      event.preventDefault();
+      const tag = item.dataset.sidebarTag;
+      if (!tag) return;
+      tags.has(tag) ? tags.delete(tag) : tags.add(tag);
+      apply();
+    }));
+    apply();
+  }
+</script>

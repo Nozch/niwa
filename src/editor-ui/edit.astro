@@ -1,0 +1,53 @@
+---
+// dev 専用の編集ページ。integration が command==='dev' のときだけ /editor/[dir]/edit に注入する。
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import EditorForm from '@/components/EditorForm.svelte';
+import { articleDir, buildNavigation, sortArticles, uniqueSorted } from '@/lib/articles';
+
+export async function getStaticPaths() {
+  const all = await getCollection('articles');
+  return all.map((article) => ({ params: { dir: articleDir(article) } }));
+}
+
+const { dir } = Astro.params;
+const all = await getCollection('articles');
+const navigation = buildNavigation(sortArticles(all));
+const articles = sortArticles(all).map((a) => ({ id: a.data.id, title: a.data.title, kind: a.data.kind }));
+const allTags = uniqueSorted(all.flatMap((a) => a.data.tags));
+const allCategories = uniqueSorted(all.flatMap((a) => a.data.categories));
+const allSeries = uniqueSorted(all.flatMap((a) => a.data.series));
+
+const visualsAll = await getCollection('visuals');
+const ownedVisuals = visualsAll
+  .filter((v) => v.filePath?.replaceAll('\\', '/').includes(`articles/${dir}/visuals/`))
+  .map((v) => ({ id: v.data.id, title: v.data.title }));
+---
+
+<BaseLayout title="記事を編集" navigation={navigation}>
+  <section class="editor-page">
+    <a class="back" href="/editor">← 一覧へ</a>
+    <header class="editor-head">
+      <h1>記事を編集</h1>
+    </header>
+    <EditorForm
+      mode="edit"
+      dir={dir}
+      articles={articles}
+      allTags={allTags}
+      allCategories={allCategories}
+      allSeries={allSeries}
+      ownedVisuals={ownedVisuals}
+      client:load
+    />
+  </section>
+</BaseLayout>
+
+<style>
+  .editor-page { max-width: 760px; margin: 0 auto; padding: 54px 48px 90px; }
+  .editor-head { margin-bottom: 1.5rem; }
+  .editor-head h1 { margin: 0.2rem 0; }
+  @media (max-width: 720px) {
+    .editor-page { padding: 38px 20px 70px; }
+  }
+</style>

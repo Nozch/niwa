@@ -1,0 +1,64 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Visual from '@/components/Visual.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { articleHref, articleSlug, buildNavigation, formatDate, kindLabel, relatedArticles, visibleArticles } from '@/lib/articles';
+
+export async function getStaticPaths() {
+  const all = await getCollection('articles');
+  return visibleArticles(all, import.meta.env.DEV).map((article) => ({ params: { slug: articleSlug(article) }, props: { article } }));
+}
+
+interface Props { article: CollectionEntry<'articles'> }
+const { article } = Astro.props;
+const allArticles = await getCollection('articles');
+const navigation = buildNavigation(visibleArticles(allArticles, import.meta.env.DEV));
+const related = relatedArticles(article, allArticles);
+const { Content } = await render(article);
+const href = articleHref(article);
+const published = article.data.publishedAt ?? article.data.createdAt;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: article.data.title,
+  description: article.data.description,
+  datePublished: published,
+  dateModified: article.data.updatedAt ?? published,
+  url: new URL(href, Astro.site).href,
+  keywords: article.data.tags,
+};
+---
+
+<BaseLayout
+  title={article.data.title}
+  description={article.data.description}
+  navigation={navigation}
+  canonicalPath={href}
+  pagefindBody={!article.data.draft}
+  pagefindMeta={{ title: article.data.title, description: article.data.description, tags: article.data.tags.join(',') }}
+  jsonLd={jsonLd}
+>
+  <article class="article-page">
+    <a class="back" href="/">← ストリームへ戻る</a>
+    <header class="article-header">
+      <div class="card-meta">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>{kindLabel(article)}</span>
+        <time datetime={published}>{formatDate(published)}</time>
+        {article.data.draft && <span class="visibility">下書き</span>}
+      </div>
+      <h1 data-pagefind-meta="title">{article.data.title}</h1>
+      <p class="article-description" data-pagefind-meta="description">{article.data.description}</p>
+    </header>
+    <div class="prose"><Content components={{ Visual }} /></div>
+    <div class="tags article-footer-tags" data-pagefind-filter="tag">
+      {article.data.tags.map((tag) => <span data-pagefind-filter={`tag:${tag}`}>＃{tag}</span>)}
+    </div>
+    {related.length > 0 && (
+      <aside class="related">
+        <h2>つながり ・ {related.length}</h2>
+        {related.map((item) => <a href={articleHref(item)}><strong>{item.data.title}</strong><small>{kindLabel(item)}</small></a>)}
+      </aside>
+    )}
+  </article>
+</BaseLayout>

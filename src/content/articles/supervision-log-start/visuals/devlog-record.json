@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "01a005f8-b1f2-7bdf-855e-d06bfa70f854",
+  "type": "recordShape",
+  "title": "DevLogの形と、項目ごとの担い手",
+  "summary": "一回の作業記録が持つ項目と、それぞれが何のためにあり、誰が用意して誰が確定するか。",
+  "caption": "機械が集められるものは機械に集めさせ、人間にしか書けない欄を残す。",
+  "sources": [],
+  "record": "DevLog",
+  "fields": [
+    {
+      "path": "changeSummary",
+      "valueType": "object",
+      "purpose": "自由記述だった要約を三つに割った。分けないと、何を変えたかの記述に理由が飲み込まれる"
+    },
+    {
+      "path": "changeSummary.what",
+      "valueType": "string",
+      "purpose": "後から探すための索引",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "changeSummary.why",
+      "valueType": "string",
+      "emphasis": true,
+      "purpose": "なぜ変えたか。この記録の主役であり、コードの中に残らない唯一の情報",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "changeSummary.how",
+      "valueType": "string",
+      "purpose": "どう実現したか。実装の補足",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "changedFiles",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "Gitがすでに知っていること。人間がフォームへ転記する必要はない",
+      "draftedBy": "machine",
+      "confirmedBy": "machine"
+    },
+    {
+      "path": "checkedItems",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "人間が自分の目や操作で確かめたこと。テストが成功したことはここに入らない",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "concerns",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "確かめられていないこと。未確認を空欄にせず、未確認のまま残す欄",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "riskTags",
+      "valueType": "enum",
+      "repeated": true,
+      "choices": ["auth", "permission", "database", "deletion", "external_api", "personal_data", "dependency", "env", "unknown"],
+      "purpose": "影響範囲。語彙を固定して、後から横断して数えられるようにする",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "aiRevisionCount",
+      "valueType": "number",
+      "purpose": "人間の発話数から機械的に決まる。手で意味を作らない",
+      "draftedBy": "machine",
+      "confirmedBy": "machine"
+    },
+    {
+      "path": "nextAction",
+      "valueType": "string",
+      "purpose": "次に始める場所",
+      "draftedBy": "ai",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "status",
+      "valueType": "enum",
+      "choices": ["open", "closed"],
+      "purpose": "この記録が閉じたかどうか",
+      "confirmedBy": "human"
+    }
+  ]
+}

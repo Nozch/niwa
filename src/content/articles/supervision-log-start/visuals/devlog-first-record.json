@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "01a02d51-0298-782a-b4c2-094b73e5b7f2",
+  "type": "recordShape",
+  "title": "最初のDevLogの形",
+  "summary": "一回の作業に、変更と確認と不安を書く。項目はどれも人間が手で埋めるものだった。",
+  "caption": "変更したファイルを持つ欄はまだ無い。Gitが知っていることを、記録は受け取っていない。",
+  "sources": [],
+  "record": "DevLog（最初の形）",
+  "fields": [
+    {
+      "path": "title",
+      "valueType": "string",
+      "purpose": "後から一覧で探すための見出し",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "changeSummary",
+      "valueType": "string",
+      "emphasis": true,
+      "purpose": "何をしたかを一本の文章で書く。なぜ変えたかも、どう直したかも、書くならここへ流し込むしかない",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "checkedItems",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "自分の目や操作で確かめたこと",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "concerns",
+      "valueType": "string",
+      "repeated": true,
+      "purpose": "確かめられていないこと。未確認を空欄にせず、未確認のまま残す欄",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "riskTags",
+      "valueType": "enum",
+      "repeated": true,
+      "choices": ["auth", "permission", "database", "deletion", "external_api", "personal_data", "dependency", "env", "unknown"],
+      "purpose": "影響範囲。語彙を固定して、後から横断して数えられるようにする",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "aiRevisionCount",
+      "valueType": "number",
+      "purpose": "AIとの往復回数。セッションログを見れば分かる数字を、当時は自分で数えて書き写していた",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "nextAction",
+      "valueType": "string",
+      "purpose": "次に始める場所",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    },
+    {
+      "path": "status",
+      "valueType": "enum",
+      "choices": ["open", "closed"],
+      "purpose": "この記録が閉じたかどうか",
+      "draftedBy": "human",
+      "confirmedBy": "human"
+    }
+  ]
+}
